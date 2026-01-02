@@ -112,6 +112,11 @@ let postTimer = null;
 let preInterval = null;
 let postInterval = null;
 
+// timers default; can be shortened by URL param ?fast=1 for tests
+const isFastMode = new URLSearchParams(window.location.search).get('fast') === '1';
+const PRE_SECONDS = isFastMode ? 1 : 10;
+const POST_SECONDS = isFastMode ? 1 : 10;
+
 const card = document.getElementById('card');
 const wordEl = document.getElementById('word');
 const imageWrap = document.getElementById('imageWrap');
@@ -154,9 +159,11 @@ function startPreReveal(seconds = 5) {
   }, 1000);
   preTimer = setTimeout(() => {
     if (preInterval) { clearInterval(preInterval); preInterval = null; }
-    countdownEl.textContent = `Jetzt klicken oder Leertaste drücken`;
+    countdownEl.textContent = `Bild wird angezeigt...`;
     canReveal = true;
     preTimer = null;
+    // automatically show the image when pre-timer finishes
+    showImage();
   }, seconds * 1000);
 }
 
@@ -182,8 +189,8 @@ function render() {
   imageWrap.setAttribute('aria-hidden', 'true');
   imageWrap.classList.remove('show');
   revealed = false;
-  // start initial 10s lock
-  startPreReveal(10);
+  // start initial lock (use PRE_SECONDS, supports fast mode)
+  startPreReveal(PRE_SECONDS);
 }
 
 function createSVGForEmoji(emoji, label) {
@@ -226,7 +233,7 @@ function showImage() {
   if (preInterval) { clearInterval(preInterval); preInterval = null; }
   canReveal = false;
   speak(item.word);
-  startPostAutoNext(10);
+  startPostAutoNext(POST_SECONDS);
 }
 
 function next() {

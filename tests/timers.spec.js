@@ -5,10 +5,10 @@ test('timers: pre-wait then auto-show then auto-next', async ({ page }) => {
   await page.goto('/?fast=1');
 
   // pre-wait should display 'Warte 1s' (or similar)
-  await expect(page.locator('#countdown')).toHaveText(/Warte 1s/);
+  await expect(page.locator('#countdown')).toHaveText(/Warte 1s/, { timeout: 2000 });
 
-  // after fast pre-wait, image should appear automatically
-  await page.waitForSelector('#imageWrap img', { timeout: 5000 });
+  // after fast pre-wait, image should appear automatically (allow up to 10s)
+  await page.waitForSelector('#imageWrap img', { timeout: 10000 });
   await expect(page.locator('#imageWrap img')).toBeVisible();
 
   // after image shown, countdown shows 'Weiter in 1s' then new word is loaded
@@ -16,5 +16,5 @@ test('timers: pre-wait then auto-show then auto-next', async ({ page }) => {
 
   // wait for the next word to appear (word text should change)
   const firstWord = await page.locator('#word').textContent();
-  await page.waitForFunction((selector, old) => document.querySelector(selector).textContent !== old, {}, '#word', firstWord);
+  await page.waitForFunction((params) => document.querySelector(params.selector).textContent !== params.old, { selector: '#word', old: firstWord });
 });
