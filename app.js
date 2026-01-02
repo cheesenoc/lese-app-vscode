@@ -203,52 +203,11 @@ function createSVGForEmoji(emoji, label) {
 }
 
 function speak(text) {
-  if (!('speechSynthesis' in window)) {
-    console.warn('SpeechSynthesis not available in this browser.');
-    return;
-  }
-
-  const speakNow = () => {
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'de-DE';
-
-      const voices = window.speechSynthesis.getVoices() || [];
-      // Prefer a German voice if available
-      let voice = voices.find(v => /^de(-|_)?/i.test(v.lang));
-      if (!voice && voices.length > 0) {
-        voice = voices[0];
-        console.warn('No German voice found, falling back to', voice.name, voice.lang);
-      }
-      if (voice) u.voice = voice;
-
-      // Some browsers require a user gesture and may block auto-play; ensure speak is called after a gesture
-      console.debug('Speaking:', text, 'voice:', voice ? voice.name : 'none', 'lang:', u.lang);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch (err) {
-      console.error('Error while trying to speak:', err);
-    }
-  };
-
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) {
-    // Voices not yet loaded — wait for onvoiceschanged
-    console.debug('No speech voices available yet, waiting for onvoiceschanged...');
-    const onChange = () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', onChange);
-      speakNow();
-    };
-    window.speechSynthesis.addEventListener('voiceschanged', onChange);
-    // Also set a fallback timeout to try anyway
-    setTimeout(() => {
-      if ((window.speechSynthesis.getVoices() || []).length === 0) {
-        console.warn('Voices still unavailable after 1s timeout, attempting to speak anyway...');
-      }
-      speakNow();
-    }, 1000);
-  } else {
-    speakNow();
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'de-DE';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
   }
 }
 
