@@ -63,7 +63,23 @@ async function walkFiles(dir) {
     }
 
     console.log('Connecting to FTP host', host, 'secure=', secure, 'port=', port);
-    await client.access({ host, port, user, password, secure, secureOptions });
+    try {
+      await client.access({ host, port, user, password, secure, secureOptions });
+    } catch (err) {
+      const msg = String(err.message || err);
+      // If the server refuses cleartext or weak ciphers, try implicit FTPS as a fallback
+      if (msg.includes('cleartext') || msg.includes('weak ciphers') || msg.includes('421') || msg.includes('421-')) {
+        console.warn('Server rejected cleartext or weak ciphers. Retrying with implicit FTPS (secure=implicit)...');
+        try {
+          await client.access({ host, port, user, password, secure: 'implicit', secureOptions });
+        } catch (err2) {
+          console.error('Retry with implicit FTPS failed:', err2);
+          throw err2;
+        }
+      } else {
+        throw err;
+      }
+    }
 
     const files = await walkFiles(localRoot);
     for (const f of files) {
