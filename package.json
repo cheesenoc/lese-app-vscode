@@ -4,11 +4,14 @@
   "description": "Kleine Web-App zum Lesenlernen für Kinder",
   "private": false,
   "scripts": {
-    "lint": "html-validate \"**/*.html\"",
+    "lint": "html-validate \"index.html\"",
+    "deploy": "node scripts/deploy.js",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
     "html-validate": "^8.0.0",
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "basic-ftp": "^5.0.0",
+    "dotenv": "^16.1.0"
   }
 }
