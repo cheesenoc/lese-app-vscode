@@ -2,6 +2,12 @@
 
 Kleine responsive Web-App, mit der Kinder Großbuchstaben-Wörter sehen und nach Klick/Leertaste ein Bild als Lösung angezeigt bekommen.
 
+Repository: https://github.com/cheesenoc/lese-app-vscode
+
+License: MIT — see `LICENSE`
+
+Demo (GitHub Pages): https://cheesenoc.github.io/lese-app-vscode/
+
 Dateien:
 - `index.html` — App
 - `styles.css` — Styling
