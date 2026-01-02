@@ -4,9 +4,11 @@
   "description": "Kleine Web-App zum Lesenlernen für Kinder",
   "private": false,
   "scripts": {
-    "lint": "html-validate \"**/*.html\""
+    "lint": "html-validate \"**/*.html\"",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "html-validate": "^8.0.0"
+    "html-validate": "^8.0.0",
+    "@playwright/test": "^1.40.0"
   }
 }
