@@ -37,7 +37,24 @@ async function walkFiles(dir) {
     const user = process.env.FTP_USER;
     const password = process.env.FTP_PASSWORD;
     const port = process.env.FTP_PORT ? parseInt(process.env.FTP_PORT, 10) : undefined;
-    const secure = (process.env.FTP_SECURE || '') === 'true';
+    // FTP_SECURE can be:
+    // - 'false' (default) -> plain FTP
+    // - 'true' or 'explicit' -> explicit FTPS (AUTH TLS)
+    // - 'implicit' -> implicit FTPS (TLS from the start)
+    const secureEnv = (process.env.FTP_SECURE || '').toLowerCase();
+    let secure;
+    if (secureEnv === 'implicit') {
+      secure = 'implicit';
+    } else if (secureEnv === 'true' || secureEnv === 'explicit') {
+      secure = true;
+    } else {
+      secure = false;
+    }
+
+    // TLS options (min version can be configured via FTP_TLS_MIN_VERSION, defaults to TLSv1.2)
+    const tlsMin = process.env.FTP_TLS_MIN_VERSION || 'TLSv1.2';
+    const secureOptions = { minVersion: tlsMin };
+
     const remoteRoot = process.env.FTP_PATH || '/';
     const localRoot = path.resolve(process.env.FTP_LOCAL_DIR || '.');
 
@@ -45,7 +62,8 @@ async function walkFiles(dir) {
       throw new Error('Missing FTP_HOST or FTP_USER in environment. See .env.example');
     }
 
-    await client.access({ host, port, user, password, secure });
+    console.log('Connecting to FTP host', host, 'secure=', secure, 'port=', port);
+    await client.access({ host, port, user, password, secure, secureOptions });
 
     const files = await walkFiles(localRoot);
     for (const f of files) {
