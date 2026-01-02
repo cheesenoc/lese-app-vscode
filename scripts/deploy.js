@@ -67,14 +67,23 @@ async function walkFiles(dir) {
       await client.access({ host, port, user, password, secure, secureOptions });
     } catch (err) {
       const msg = String(err.message || err);
-      // If the server refuses cleartext or weak ciphers, try implicit FTPS as a fallback
+      // If the server refuses cleartext or weak ciphers, first try explicit FTPS (AUTH TLS)
       if (msg.includes('cleartext') || msg.includes('weak ciphers') || msg.includes('421') || msg.includes('421-')) {
-        console.warn('Server rejected cleartext or weak ciphers. Retrying with implicit FTPS (secure=implicit)...');
+        console.warn('Server rejected cleartext or weak ciphers. Retrying with explicit FTPS (secure=true / AUTH TLS)...');
         try {
-          await client.access({ host, port, user, password, secure: 'implicit', secureOptions });
+          await client.access({ host, port, user, password, secure: true, secureOptions });
+          console.log('Explicit FTPS (AUTH TLS) succeeded.');
         } catch (err2) {
-          console.error('Retry with implicit FTPS failed:', err2);
-          throw err2;
+          console.warn('Explicit FTPS failed:', err2);
+          console.warn('Retrying with implicit FTPS (secure=implicit) as a last resort...');
+          try {
+            await client.access({ host, port, user, password, secure: 'implicit', secureOptions });
+            console.log('Implicit FTPS succeeded.');
+          } catch (err3) {
+            console.error('Retry with implicit FTPS failed:', err3);
+            // If both explicit and implicit fail, surface the original error
+            throw err3;
+          }
         }
       } else {
         throw err;
