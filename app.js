@@ -114,8 +114,8 @@ let postInterval = null;
 
 // timers default; can be shortened by URL param ?fast=1 for tests
 const isFastMode = new URLSearchParams(window.location.search).get('fast') === '1';
-const PRE_SECONDS = isFastMode ? 1 : 10;
-const POST_SECONDS = isFastMode ? 1 : 10;
+const PRE_SECONDS = isFastMode ? 1 : 5;
+const POST_SECONDS = isFastMode ? 1 : 5;
 
 const card = document.getElementById('card');
 const wordEl = document.getElementById('word');
@@ -159,20 +159,20 @@ function startPreReveal(seconds = 5) {
   }, 1000);
   preTimer = setTimeout(() => {
     if (preInterval) { clearInterval(preInterval); preInterval = null; }
-    countdownEl.textContent = `Bild wird angezeigt...`;
+    countdownEl.textContent = `Klicken oder Leertaste drücken`;
     canReveal = true;
     preTimer = null;
     // automatically show the image when pre-timer finishes
-    showImage();
+    //showImage();
   }, seconds * 1000);
 }
 
 function startPostAutoNext(seconds = 5) {
   let s = seconds;
-  countdownEl.textContent = `Weiter in ${s}s`;
+  countdownEl.textContent = `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`;
   postInterval = setInterval(() => {
     s -= 1;
-    if (s > 0) countdownEl.textContent = `Weiter in ${s}s`;
+    if (s > 0) countdownEl.textContent = `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`;
     else countdownEl.textContent = '';
   }, 1000);
   postTimer = setTimeout(() => {
@@ -203,11 +203,52 @@ function createSVGForEmoji(emoji, label) {
 }
 
 function speak(text) {
-  if ('speechSynthesis' in window) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'de-DE';
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+  if (!('speechSynthesis' in window)) {
+    console.warn('SpeechSynthesis not available in this browser.');
+    return;
+  }
+
+  const speakNow = () => {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'de-DE';
+
+      const voices = window.speechSynthesis.getVoices() || [];
+      // Prefer a German voice if available
+      let voice = voices.find(v => /^de(-|_)?/i.test(v.lang));
+      if (!voice && voices.length > 0) {
+        voice = voices[0];
+        console.warn('No German voice found, falling back to', voice.name, voice.lang);
+      }
+      if (voice) u.voice = voice;
+
+      // Some browsers require a user gesture and may block auto-play; ensure speak is called after a gesture
+      console.debug('Speaking:', text, 'voice:', voice ? voice.name : 'none', 'lang:', u.lang);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (err) {
+      console.error('Error while trying to speak:', err);
+    }
+  };
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) {
+    // Voices not yet loaded — wait for onvoiceschanged
+    console.debug('No speech voices available yet, waiting for onvoiceschanged...');
+    const onChange = () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', onChange);
+      speakNow();
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', onChange);
+    // Also set a fallback timeout to try anyway
+    setTimeout(() => {
+      if ((window.speechSynthesis.getVoices() || []).length === 0) {
+        console.warn('Voices still unavailable after 1s timeout, attempting to speak anyway...');
+      }
+      speakNow();
+    }, 1000);
+  } else {
+    speakNow();
   }
 }
 
