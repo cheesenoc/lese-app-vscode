@@ -1,106 +1,110 @@
-const items = [
-  {word: 'BAUM', emoji: '🌳'},
-  {word: 'HAUS', emoji: '🏠'},
-  {word: 'KATZE', emoji: '🐱'},
-  {word: 'HUND', emoji: '🐶'},
-  {word: 'AUTO', emoji: '🚗'},
-  {word: 'BALL', emoji: '⚽'},
-  {word: 'SONNE', emoji: '☀️'},
-  {word: 'MOND', emoji: '🌙'},
-  {word: 'BLUME', emoji: '🌸'},
-  {word: 'VOGEL', emoji: '🐦'},
-  {word: 'FISCH', emoji: '🐟'},
-  {word: 'APFEL', emoji: '🍎'},
-  {word: 'BROT', emoji: '🍞'},
-  {word: 'WASSER', emoji: '💧'},
-  {word: 'MILCH', emoji: '🥛'},
-  {word: 'STUHL', emoji: '🪑'},
-  {word: 'TISCH', emoji: '🛋️'},
-  {word: 'TÜR', emoji: '🚪'},
-  {word: 'FENSTER', emoji: '🔲'},
-  {word: 'BUCH', emoji: '📚'},
-  {word: 'SCHULE', emoji: '🏫'},
-  {word: 'MAMA', emoji: '👩‍👧'},
-  {word: 'PAPA', emoji: '👨‍👧'},
-  {word: 'OMA', emoji: '👵'},
-  {word: 'OPA', emoji: '👴'},
-  {word: 'ZUG', emoji: '🚆'},
-  {word: 'BUS', emoji: '🚌'},
-  {word: 'FAHRRAD', emoji: '🚲'},
-  {word: 'SCHUH', emoji: '👟'},
-  {word: 'SOCKE', emoji: '🧦'},
-  {word: 'HAND', emoji: '✋'},
-  {word: 'FUSS', emoji: '🦶'},
-  {word: 'AUGE', emoji: '👁️'},
-  {word: 'OHR', emoji: '👂'},
-  {word: 'NASE', emoji: '👃'},
-  {word: 'MUND', emoji: '👄'},
-  {word: 'HAARE', emoji: '💇‍♀️'},
-  {word: 'HUT', emoji: '🎩'},
-  {word: 'KLEID', emoji: '👗'},
-  {word: 'HEMD', emoji: '👕'},
-  {word: 'KIND', emoji: '🧒'},
-  {word: 'SPIEL', emoji: '🎲'},
-  {word: 'PFERD', emoji: '🐴'},
-  {word: 'KUH', emoji: '🐮'},
-  {word: 'SCHAF', emoji: '🐑'},
-  {word: 'ENTE', emoji: '🦆'},
-  {word: 'HASE', emoji: '🐰'},
-  {word: 'EIS', emoji: '🍦'},
-  {word: 'UHR', emoji: '🕒'},
-  {word: 'WOLKE', emoji: '☁️'},
-  {word: 'ROSE', emoji: '🌹'},
-  {word: 'ZAHN', emoji: '🦷'},
-  {word: 'BOOT', emoji: '🛥️'},
-  {word: 'BÄR', emoji: '🐻'},
-  {word: 'LÖWE', emoji: '🦁'},
-  {word: 'TIGER', emoji: '🐯'},
-  {word: 'AFFE', emoji: '🐵'},
-  {word: 'FROSCH', emoji: '🐸'},
-  {word: 'BRILLE', emoji: '🕶️'},
-  {word: 'KERZE', emoji: '🕯️'},
-  {word: 'KARTOFFEL', emoji: '🥔'},
-  {word: 'TOMATE', emoji: '🍅'},
-  {word: 'BANANE', emoji: '🍌'},
-  {word: 'SCHMETTERLING', emoji: '🦋'},
-  {word: 'REGEN', emoji: '🌧️'},
-  {word: 'STRASSE', emoji: '🛣️'},
-  {word: 'KAMERA', emoji: '📷'},
-  {word: 'COMPUTER', emoji: '💻'},
-  {word: 'TELEFON', emoji: '📱'},
-  {word: 'LIED', emoji: '🎵'},
-  {word: 'PUPPE', emoji: '🪆'},
-  {word: 'SPIELZEUG', emoji: '🧸'},
-  {word: 'KÄSE', emoji: '🧀'},
-  {word: 'ZUCKER', emoji: '🍬'},
-  {word: 'KUCHEN', emoji: '🍰'},
-  {word: 'BALLON', emoji: '🎈'},
-  {word: 'TASCHE', emoji: '👜'},
-  {word: 'SCHLOSS', emoji: '🏰'},
-  {word: 'BRÜCKE', emoji: '🌉'},
-  {word: 'GARTEN', emoji: '🏡'},
-  {word: 'WALD', emoji: '🌲'},
-  {word: 'SEE', emoji: '🏞️'},
-  {word: 'MEER', emoji: '🌊'},
-  {word: 'INSEL', emoji: '🏝️'},
-  {word: 'SCHWAN', emoji: '🦢'},
-  {word: 'DRACHE', emoji: '🐉'},
-  {word: 'LAMPE', emoji: '💡'},
-  {word: 'RADIO', emoji: '📻'},
-  {word: 'FLUSS', emoji: '🏞️'},
-  {word: 'SCHERE', emoji: '✂️'},
-  {word: 'KALENDER', emoji: '📅'},
-  {word: 'STIFT', emoji: '✏️'},
-  {word: 'PAPIER', emoji: '📄'},
-  {word: 'STERN', emoji: '⭐'},
-  {word: 'GLOCKE', emoji: '🔔'},
-  {word: 'KINO', emoji: '🎬'},
-  {word: 'THEATER', emoji: '🎭'},
-  {word: 'ROT', emoji: '🔴'},
-  {word: 'BLAU', emoji: '🔵'},
-  {word: 'GRÜN', emoji: '🟢'},
-  {word: 'GELB', emoji: '🟡'}
+const itemsMap = [
+  {de: 'BAUM', fr: 'ARBRE', emoji: '🌳'},
+  {de: 'HAUS', fr: 'MAISON', emoji: '🏠'},
+  {de: 'KATZE', fr: 'CHAT', emoji: '🐱'},
+  {de: 'HUND', fr: 'CHIEN', emoji: '🐶'},
+  {de: 'AUTO', fr: 'VOITURE', emoji: '🚗'},
+  {de: 'BALL', fr: 'BALLE', emoji: '⚽'},
+  {de: 'SONNE', fr: 'SOLEIL', emoji: '☀️'},
+  {de: 'MOND', fr: 'LUNE', emoji: '🌙'},
+  {de: 'BLUME', fr: 'FLEUR', emoji: '🌸'},
+  {de: 'VOGEL', fr: 'OISEAU', emoji: '🐦'},
+  {de: 'FISCH', fr: 'POISSON', emoji: '🐟'},
+  {de: 'APFEL', fr: 'POMME', emoji: '🍎'},
+  {de: 'BROT', fr: 'PAIN', emoji: '🍞'},
+  {de: 'WASSER', fr: 'EAU', emoji: '💧'},
+  {de: 'MILCH', fr: 'LAIT', emoji: '🥛'},
+  {de: 'STUHL', fr: 'CHAIR', emoji: '🪑'},
+  {de: 'TISCH', fr: 'TABLE', emoji: '🛋️'},
+  {de: 'TÜR', fr: 'PORTE', emoji: '🚪'},
+  {de: 'FENSTER', fr: 'FENETRE', emoji: '🔲'},
+  {de: 'BUCH', fr: 'LIVRE', emoji: '📚'},
+  {de: 'SCHULE', fr: 'ECOLE', emoji: '🏫'},
+  {de: 'MAMA', fr: 'MAMAN', emoji: '👩‍👧'},
+  {de: 'PAPA', fr: 'PAPA', emoji: '👨‍👧'},
+  {de: 'OMA', fr: 'GRAN-MÈRE', emoji: '👵'},
+  {de: 'OPA', fr: 'GRAN-PÈRE', emoji: '👴'},
+  {de: 'ZUG', fr: 'TRAIN', emoji: '🚆'},
+  {de: 'BUS', fr: 'BUS', emoji: '🚌'},
+  {de: 'FAHRRAD', fr: 'VELO', emoji: '🚲'},
+  {de: 'SCHUH', fr: 'CHAUSSURE', emoji: '👟'},
+  {de: 'SOCKE', fr: 'CHAUSSETTE', emoji: '🧦'},
+  {de: 'HAND', fr: 'MAIN', emoji: '✋'},
+  {de: 'FUSS', fr: 'PIED', emoji: '🦶'},
+  {de: 'AUGE', fr: 'OEIL', emoji: '👁️'},
+  {de: 'OHR', fr: 'OREILLE', emoji: '👂'},
+  {de: 'NASE', fr: 'NEZ', emoji: '👃'},
+  {de: 'MUND', fr: 'BOUCHE', emoji: '👄'},
+  {de: 'HAARE', fr: 'CHEVEUX', emoji: '💇‍♀️'},
+  {de: 'HUT', fr: 'CHAPEAU', emoji: '🎩'},
+  {de: 'KLEID', fr: 'ROBE', emoji: '👗'},
+  {de: 'HEMD', fr: 'CHEMISE', emoji: '👕'},
+  {de: 'KIND', fr: 'ENFANT', emoji: '🧒'},
+  {de: 'SPIEL', fr: 'JEU', emoji: '🎲'},
+  {de: 'PFERD', fr: 'CHEVAL', emoji: '🐴'},
+  {de: 'KUH', fr: 'VACHE', emoji: '🐮'},
+  {de: 'SCHAF', fr: 'MOUTON', emoji: '🐑'},
+  {de: 'ENTE', fr: 'CANARD', emoji: '🦆'},
+  {de: 'HASE', fr: 'LAPIN', emoji: '🐰'},
+  {de: 'EIS', fr: 'GLACE', emoji: '🍦'},
+  {de: 'UHR', fr: 'MONTRE', emoji: '🕒'},
+  {de: 'WOLKE', fr: 'NUAGE', emoji: '☁️'},
+  {de: 'ROSE', fr: 'ROSE', emoji: '🌹'},
+  {de: 'ZAHN', fr: 'DENT', emoji: '🦷'},
+  {de: 'BOOT', fr: 'BATEAU', emoji: '🛥️'},
+  {de: 'BÄR', fr: 'OURS', emoji: '🐻'},
+  {de: 'LÖWE', fr: 'LION', emoji: '🦁'},
+  {de: 'TIGER', fr: 'TIGRE', emoji: '🐯'},
+  {de: 'AFFE', fr: 'SINGE', emoji: '🐵'},
+  {de: 'FROSCH', fr: 'GRENOUILLE', emoji: '🐸'},
+  {de: 'BRILLE', fr: 'LUNETTES', emoji: '🕶️'},
+  {de: 'KERZE', fr: 'BOUGIE', emoji: '🕯️'},
+  {de: 'KARTOFFEL', fr: 'POMME DE TERRE', emoji: '🥔'},
+  {de: 'TOMATE', fr: 'TOMATE', emoji: '🍅'},
+  {de: 'BANANE', fr: 'BANANE', emoji: '🍌'},
+  {de: 'SCHMETTERLING', fr: 'PAPILLON', emoji: '🦋'},
+  {de: 'REGEN', fr: 'PLUIE', emoji: '🌧️'},
+  {de: 'STRASSE', fr: 'RUE', emoji: '🛣️'},
+  {de: 'KAMERA', fr: 'APPAREIL PHOTO', emoji: '📷'},
+  {de: 'COMPUTER', fr: 'ORDINATEUR', emoji: '💻'},
+  {de: 'TELEFON', fr: 'TELEPHONE', emoji: '📱'},
+  {de: 'LIED', fr: 'CHANSON', emoji: '🎵'},
+  {de: 'PUPPE', fr: 'POUPÉE', emoji: '🪆'},
+  {de: 'SPIELZEUG', fr: 'JOUET', emoji: '🧸'},
+  {de: 'KÄSE', fr: 'FROMAGE', emoji: '🧀'},
+  {de: 'ZUCKER', fr: 'SUCRE', emoji: '🍬'},
+  {de: 'KUCHEN', fr: 'GATEAU', emoji: '🍰'},
+  {de: 'BALLON', fr: 'BALLON', emoji: '🎈'},
+  {de: 'TASCHE', fr: 'SAC', emoji: '👜'},
+  {de: 'SCHLOSS', fr: 'CHATEAU', emoji: '🏰'},
+  {de: 'BRÜCKE', fr: 'PONT', emoji: '🌉'},
+  {de: 'GARTEN', fr: 'JARDIN', emoji: '🏡'},
+  {de: 'WALD', fr: 'FORET', emoji: '🌲'},
+  {de: 'SEE', fr: 'LAC', emoji: '🏞️'},
+  {de: 'MEER', fr: 'MER', emoji: '🌊'},
+  {de: 'INSEL', fr: 'ILE', emoji: '🏝️'},
+  {de: 'SCHWAN', fr: 'CYGNE', emoji: '🦢'},
+  {de: 'DRACHE', fr: 'DRAGON', emoji: '🐉'},
+  {de: 'LAMPE', fr: 'LAMPE', emoji: '💡'},
+  {de: 'RADIO', fr: 'RADIO', emoji: '📻'},
+  {de: 'FLUSS', fr: 'RIVIERE', emoji: '🏞️'},
+  {de: 'SCHERE', fr: 'CISEAUX', emoji: '✂️'},
+  {de: 'KALENDER', fr: 'CALENDRIER', emoji: '📅'},
+  {de: 'STIFT', fr: 'STYLO', emoji: '✏️'},
+  {de: 'PAPIER', fr: 'PAPIER', emoji: '📄'},
+  {de: 'STERN', fr: 'ETOILE', emoji: '⭐'},
+  {de: 'GLOCKE', fr: 'CLOCHETTE', emoji: '🔔'},
+  {de: 'KINO', fr: 'CINEMA', emoji: '🎬'},
+  {de: 'THEATER', fr: 'THEATRE', emoji: '🎭'},
+  {de: 'ROT', fr: 'ROUGE', emoji: '🔴'},
+  {de: 'BLAU', fr: 'BLEU', emoji: '🔵'},
+  {de: 'GRÜN', fr: 'VERT', emoji: '🟢'},
+  {de: 'GELB', fr: 'JAUNE', emoji: '🟡'}
 ];
+
+let index = 0;
+let revealed = false;
+let queue = [];
 
 let index = 0;
 let revealed = false;
@@ -111,6 +115,45 @@ let preTimer = null;
 let postTimer = null;
 let preInterval = null;
 let postInterval = null;
+
+// Language and scoring
+const langSelect = document.getElementById('langSelect');
+const scoreBtn = document.getElementById('score');
+const scoreCountEl = document.getElementById('scoreCount');
+let currentLang = localStorage.getItem('lese:lang') || 'de';
+let items = buildItemsForLang(currentLang);
+
+// counts stored per language: { word -> number }
+function loadCounts(lang) {
+  try {
+    return JSON.parse(localStorage.getItem('lese:counts:' + lang) || '{}');
+  } catch (e) { return {}; }
+}
+function saveCounts(lang, counts) {
+  localStorage.setItem('lese:counts:' + lang, JSON.stringify(counts));
+}
+function totalCountForLang(lang) {
+  const counts = loadCounts(lang);
+  return Object.values(counts).reduce((s, v) => s + (Number(v) || 0), 0);
+}
+function updateScoreDisplay() {
+  scoreCountEl.textContent = String(totalCountForLang(currentLang));
+}
+function showCountsModal() {
+  const counts = loadCounts(currentLang);
+  const entries = Object.entries(counts).filter(([,c]) => c > 0).sort((a,b)=>b[1]-a[1]);
+  if (entries.length === 0) {
+    alert('Keine Einträge für ' + (currentLang === 'de' ? 'Deutsch' : 'Français'));
+    return;
+  }
+  const lines = entries.map(([w,c]) => `${w}: ${c}`);
+  alert(lines.join('\n'));
+}
+
+// build items list from itemsMap for the active language
+function buildItemsForLang(lang) {
+  return itemsMap.map(it => ({ word: (lang === 'fr' ? it.fr : it.de), emoji: it.emoji }));
+}
 
 // timers default; can be shortened by URL param ?fast=1 for tests
 const isFastMode = new URLSearchParams(window.location.search).get('fast') === '1';
@@ -203,12 +246,33 @@ function createSVGForEmoji(emoji, label) {
 }
 
 function speak(text) {
-  if ('speechSynthesis' in window) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'de-DE';
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+  if (!('speechSynthesis' in window)) {
+    console.warn('SpeechSynthesis not available in this browser.');
+    return;
   }
+  const langCode = currentLang === 'fr' ? 'fr-FR' : 'de-DE';
+
+  const speakNow = () => {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = langCode;
+      const voices = window.speechSynthesis.getVoices() || [];
+      let voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(langCode.split('-')[0]));
+      if (!voice && voices.length > 0) voice = voices[0];
+      if (voice) u.voice = voice;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (err) {
+      console.error('Error while trying to speak:', err);
+    }
+  };
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) {
+    const onChange = () => { window.speechSynthesis.removeEventListener('voiceschanged', onChange); speakNow(); };
+    window.speechSynthesis.addEventListener('voiceschanged', onChange);
+    setTimeout(speakNow, 800);
+  } else speakNow();
 }
 
 function showImage() {
@@ -232,6 +296,15 @@ function showImage() {
   if (preTimer) { clearTimeout(preTimer); preTimer = null; }
   if (preInterval) { clearInterval(preInterval); preInterval = null; }
   canReveal = false;
+
+  // increment per-word counter for current language
+  try {
+    const counts = loadCounts(currentLang);
+    counts[item.word] = (counts[item.word] || 0) + 1;
+    saveCounts(currentLang, counts);
+    updateScoreDisplay();
+  } catch (e) { console.warn('Could not update counts', e); }
+
   speak(item.word);
   startPostAutoNext(POST_SECONDS);
 }
@@ -269,10 +342,27 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// initialize language selector and score UI
+langSelect.value = currentLang;
+langSelect.addEventListener('change', (e) => {
+  const newLang = e.target.value;
+  if (newLang === currentLang) return;
+  currentLang = newLang;
+  localStorage.setItem('lese:lang', currentLang);
+  items = buildItemsForLang(currentLang);
+  refillQueue();
+  index = getNextIndex();
+  render();
+  updateScoreDisplay();
+});
+
+scoreBtn.addEventListener('click', showCountsModal);
+
 // initial setup: create shuffled queue and show first word
 refillQueue();
 index = getNextIndex();
 render();
+updateScoreDisplay();
 
 // keep card focusable for accessibility
 card.addEventListener('keyup', (e) => {
