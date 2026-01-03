@@ -7,16 +7,12 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="controls" aria-hidden="false">
-    <label for="langSelect" class="visually-hidden">Sprache</label>
-    <select id="langSelect" aria-label="Sprache wählen">
-      <option value="de">Deutsch</option>
-      <option value="fr">Français</option>
-    </select>
-    <button id="score" title="Klicke, um die Punktzahlen pro Wort anzuzeigen">Fertig: <span id="scoreCount">0</span></button>
-  </div>
   <main id="app" role="application" aria-label="Leselern-App">
     <div id="card" tabindex="0">
+      <div id="controls" aria-hidden="false">
+        <button id="langBtn" aria-label="Sprache wechseln">🇫🇷</button>
+        <div id="score" title="Punkte"><span id="scoreCount">0</span></div>
+      </div>
       <div id="word" aria-live="polite">BAUM</div>
       <div id="imageWrap" aria-hidden="true"></div>
     </div>

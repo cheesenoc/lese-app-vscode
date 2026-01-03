@@ -106,10 +106,6 @@ let index = 0;
 let revealed = false;
 let queue = [];
 
-let index = 0;
-let revealed = false;
-let queue = [];
-
 let canReveal = false;
 let preTimer = null;
 let postTimer = null;
@@ -117,12 +113,41 @@ let preInterval = null;
 let postInterval = null;
 
 // Language and scoring
-const langSelect = document.getElementById('langSelect');
+const langBtn = document.getElementById('langBtn');
 const scoreBtn = document.getElementById('score');
 const scoreCountEl = document.getElementById('scoreCount');
 let currentLang = localStorage.getItem('lese:lang') || 'de';
 let items = buildItemsForLang(currentLang);
 
+// i18n messages
+const MESSAGES = {
+  de: {
+    wait: (s) => `Warte ${s}s`,
+    canClick: 'Jetzt kannst du klicken',
+    nowClick: 'Klicken oder Leertaste drücken',
+    pleaseWait: 'Bitte noch kurz warten',
+    autoNext: (s) => `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`,
+    noEntries: 'Keine Einträge für Deutsch',
+    langLabel: 'Auf Französisch wechseln',
+    scoreTooltip: 'Punkte'
+  },
+  fr: {
+    wait: (s) => `Attendez ${s}s`,
+    canClick: 'Vous pouvez cliquer maintenant',
+    nowClick: 'Cliquez ou appuyez sur espace',
+    pleaseWait: 'Veuillez patienter',
+    autoNext: (s) => `Cliquez ou appuyez sur espace - Passe automatiquement dans ${s}s`,
+    noEntries: 'Aucune entrée pour Français',
+    langLabel: 'Passer en allemand',
+    scoreTooltip: 'Points'
+  }
+};
+
+// Defensive: if controls are missing (e.g., index.html not updated), avoid throwing
+const hasControls = !!(langBtn && scoreBtn && scoreCountEl);
+if (!hasControls) {
+  console.warn('Controls missing: language button or score elements not found. Running in reduced mode.');
+}
 // counts stored per language: { word -> number }
 function loadCounts(lang) {
   try {
@@ -137,13 +162,22 @@ function totalCountForLang(lang) {
   return Object.values(counts).reduce((s, v) => s + (Number(v) || 0), 0);
 }
 function updateScoreDisplay() {
-  scoreCountEl.textContent = String(totalCountForLang(currentLang));
+  if (!scoreCountEl) return;
+  // Ensure we show 0 at the start of a new game if no counts exist
+  const counts = loadCounts(currentLang) || {};
+  const total = Object.values(counts).reduce((s,v)=>s+Number(v||0),0);
+  scoreCountEl.textContent = String(total);
+  // Update tooltip so hover always shows current count
+  if (scoreBtn) {
+    scoreBtn.title = `${MESSAGES[currentLang].scoreTooltip}: ${total}`;
+    scoreBtn.setAttribute('aria-label', `${MESSAGES[currentLang].scoreTooltip}: ${total}`);
+  }
 }
 function showCountsModal() {
   const counts = loadCounts(currentLang);
   const entries = Object.entries(counts).filter(([,c]) => c > 0).sort((a,b)=>b[1]-a[1]);
   if (entries.length === 0) {
-    alert('Keine Einträge für ' + (currentLang === 'de' ? 'Deutsch' : 'Français'));
+    alert(MESSAGES[currentLang].noEntries);
     return;
   }
   const lines = entries.map(([w,c]) => `${w}: ${c}`);
@@ -194,15 +228,15 @@ function clearTimers() {
 function startPreReveal(seconds = 5) {
   clearTimers();
   let s = seconds;
-  countdownEl.textContent = `Warte ${s}s`;
+  countdownEl.textContent = MESSAGES[currentLang].wait(s);
   preInterval = setInterval(() => {
     s -= 1;
-    if (s > 0) countdownEl.textContent = `Warte ${s}s`;
-    else countdownEl.textContent = `Jetzt kannst du klicken`;
+    if (s > 0) countdownEl.textContent = MESSAGES[currentLang].wait(s);
+    else countdownEl.textContent = MESSAGES[currentLang].canClick;
   }, 1000);
   preTimer = setTimeout(() => {
     if (preInterval) { clearInterval(preInterval); preInterval = null; }
-    countdownEl.textContent = `Klicken oder Leertaste drücken`;
+    countdownEl.textContent = MESSAGES[currentLang].nowClick;
     canReveal = true;
     preTimer = null;
     // automatically show the image when pre-timer finishes
@@ -212,10 +246,10 @@ function startPreReveal(seconds = 5) {
 
 function startPostAutoNext(seconds = 5) {
   let s = seconds;
-  countdownEl.textContent = `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`;
+  countdownEl.textContent = MESSAGES[currentLang].autoNext(s);
   postInterval = setInterval(() => {
     s -= 1;
-    if (s > 0) countdownEl.textContent = `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`;
+    if (s > 0) countdownEl.textContent = MESSAGES[currentLang].autoNext(s);
     else countdownEl.textContent = '';
   }, 1000);
   postTimer = setTimeout(() => {
@@ -321,7 +355,7 @@ card.addEventListener('click', (e) => {
     else {
       // brief feedback
       const prev = countdownEl.textContent;
-      countdownEl.textContent = 'Bitte noch kurz warten';
+    countdownEl.textContent = MESSAGES[currentLang].pleaseWait;
       setTimeout(() => { if (!canReveal) countdownEl.textContent = prev; }, 700);
     }
   } else next();
@@ -335,28 +369,63 @@ window.addEventListener('keydown', (e) => {
       if (canReveal) showImage();
       else {
         const prev = countdownEl.textContent;
-        countdownEl.textContent = 'Bitte noch kurz warten';
+        countdownEl.textContent = MESSAGES[currentLang].pleaseWait;
         setTimeout(() => { if (!canReveal) countdownEl.textContent = prev; }, 700);
       }
     } else next();
   }
 });
 
-// initialize language selector and score UI
-langSelect.value = currentLang;
-langSelect.addEventListener('change', (e) => {
-  const newLang = e.target.value;
-  if (newLang === currentLang) return;
-  currentLang = newLang;
-  localStorage.setItem('lese:lang', currentLang);
-  items = buildItemsForLang(currentLang);
-  refillQueue();
-  index = getNextIndex();
-  render();
-  updateScoreDisplay();
-});
+// initialize language button and score UI
+function flagSVGFor(lang) {
+  // lang here is the target language we want to display (fr or de)
+  if (lang === 'fr') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 2" width="24" height="16" aria-hidden="true" focusable="false"><rect width="1" height="2" x="0" y="0" fill="#0055A4"/><rect width="1" height="2" x="1" y="0" fill="#FFFFFF"/><rect width="1" height="2" x="2" y="0" fill="#EF4135"/></svg>`;
+  }
+  // default to Swiss flag for 'de' target (CH)
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="16" height="16" aria-hidden="true" focusable="false"><rect width="1" height="1" fill="#FF0000"/><g fill="#fff"><rect x="0.375" y="0.18" width="0.25" height="0.64"/><rect x="0.18" y="0.375" width="0.64" height="0.25"/></g></svg>`;
+}
+function otherLangForDisplay(current) {
+  return current === 'de' ? 'fr' : 'de';
+}
+function updateLangButton() {
+  if (!langBtn) return;
+  const target = otherLangForDisplay(currentLang);
+  langBtn.innerHTML = flagSVGFor(target);
+  langBtn.title = MESSAGES[currentLang].langLabel;
+  langBtn.setAttribute('aria-label', MESSAGES[currentLang].langLabel);
+}
 
-scoreBtn.addEventListener('click', showCountsModal);
+function resetCountsForLang(lang) {
+  saveCounts(lang, {});
+}
+
+if (langBtn) {
+  updateLangButton();
+  langBtn.addEventListener('click', () => {
+    currentLang = currentLang === 'de' ? 'fr' : 'de';
+    // New game starts — reset counts for this language
+    resetCountsForLang(currentLang);
+    localStorage.setItem('lese:lang', currentLang);
+    items = buildItemsForLang(currentLang);
+    refillQueue();
+    index = getNextIndex();
+    render();
+    updateLangButton();
+    updateScoreDisplay();
+  });
+} else {
+  console.warn('Language button not found; skipping language switch setup.');
+}
+
+if (scoreBtn) {
+  // No click action by design — tooltip shows score on hover
+  scoreBtn.title = `${MESSAGES[currentLang].scoreTooltip}: ${totalCountForLang(currentLang)}`;
+  scoreBtn.setAttribute('aria-label', `${MESSAGES[currentLang].scoreTooltip}: ${totalCountForLang(currentLang)}`);
+} else {
+  console.warn('Score button not found; hiding scoring UI.');
+}
+
 
 // initial setup: create shuffled queue and show first word
 refillQueue();
