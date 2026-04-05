@@ -119,7 +119,6 @@ let recognition = null;
 let currentWord = '';
 
 // Initialize speech recognition if available
-let recognition = null;
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
@@ -149,6 +148,45 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   };
 }
 
+// Initialize annyang if available
+if (typeof annyang !== 'undefined') {
+  annyang.addCallback('start', () => {
+    isListening = true;
+  });
+
+  annyang.addCallback('end', () => {
+    isListening = false;
+  });
+
+  annyang.addCallback('error', (error) => {
+    console.warn('Annyang error:', error);
+    isListening = false;
+    countdownEl.textContent = MESSAGES[currentLang].tryAgain || 'Versuche nochmal';
+    setTimeout(() => next(), 2000);
+  });
+
+  annyang.addCallback('errorNetwork', () => {
+    console.warn('Annyang network error');
+    isListening = false;
+    countdownEl.textContent = '🔗 Netzwerkfehler';
+    setTimeout(() => next(), 2000);
+  });
+
+  annyang.addCallback('errorPermissionBlocked', () => {
+    console.warn('Annyang permission blocked');
+    isListening = false;
+    countdownEl.textContent = '🎤 Mikrofon blockiert';
+    setTimeout(() => next(), 2000);
+  });
+
+  annyang.addCallback('errorPermissionDenied', () => {
+    console.warn('Annyang permission denied');
+    isListening = false;
+    countdownEl.textContent = '🎤 Mikrofon verweigert';
+    setTimeout(() => next(), 2000);
+  });
+}
+
 // Language and scoring
 const langBtn = document.getElementById('langBtn');
 const scoreBtn = document.getElementById('score');
@@ -170,9 +208,7 @@ const MESSAGES = {
     listening: 'Sage das Wort...',
     correct: (pts) => `✓ Richtig! +${pts} Punkte`,
     incorrect: (attempts) => `✗ Falsch. ${attempts > 0 ? `${attempts} Versuch${attempts > 1 ? 'e' : ''} übrig` : 'Keine Versuche mehr'}`,
-    tryAgain: 'Kein Audio erkannt, versuche nochmal',
-    httpsRequired: '🔒 HTTPS erforderlich für Spracherkennung',
-    micDenied: '🎤 Mikrofon-Zugriff verweigert'
+    tryAgain: 'Kein Audio erkannt, versuche nochmal'
   },
   fr: {
     wait: (s) => `Attendez ${s}s`,
@@ -186,9 +222,7 @@ const MESSAGES = {
     listening: 'Dites le mot...',
     correct: (pts) => `✓ Correct! +${pts} points`,
     incorrect: (attempts) => `✗ Faux. ${attempts > 0 ? `${attempts} essai${attempts > 1 ? 's' : ''} restant${attempts > 1 ? 's' : ''}` : 'Aucune tentative'}`,
-    tryAgain: 'Pas d\'audio détecté, réessayez',
-    httpsRequired: '🔒 HTTPS requis pour la reconnaissance vocale',
-    micDenied: '🎤 Accès au microphone refusé'
+    tryAgain: 'Pas d\'audio détecté, réessayez'
   }
 };
 
@@ -313,8 +347,12 @@ function render() {
   if (recognition && isListening) {
     recognition.stop();
   }
+  // Stop annyang if running
+  if (typeof annyang !== 'undefined' && isListening) {
+    annyang.abort();
+  }
   attemptCount = 0;
-  
+
   const item = items[index];
   wordEl.textContent = item.word;
   imageWrap.innerHTML = '';
@@ -371,6 +409,11 @@ function isSecureContext() {
 
 function startListening() {
   if (!recognition) {
+    // Try annyang as fallback for HTTP sites
+    if (typeof annyang !== 'undefined') {
+      startAnnyangListening();
+      return;
+    }
     console.warn('Speech Recognition not available');
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
     setTimeout(() => next(), 2000);
@@ -378,8 +421,14 @@ function startListening() {
   }
 
   if (!isSecureContext()) {
-    // Fallback to server-side speech recognition
-    startServerSideListening();
+    // Try annyang as fallback for HTTP sites
+    if (typeof annyang !== 'undefined') {
+      startAnnyangListening();
+      return;
+    }
+    console.warn('Speech Recognition requires HTTPS');
+    countdownEl.textContent = '🔒 HTTPS erforderlich für Spracherkennung';
+    setTimeout(() => next(), 3000);
     return;
   }
 
@@ -391,64 +440,57 @@ function startListening() {
   } catch (e) {
     console.warn('Could not start recognition:', e);
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
-    setTimeout(startListening, 1500);
+    setTimeout(() => next(), 1500);
   }
 }
 
-async function startServerSideListening() {
+function startAnnyangListening() {
   countdownEl.textContent = MESSAGES[currentLang].listening || 'Sage das Wort...';
 
+  // Set up annyang commands dynamically
+  const commands = {};
+  const currentWord = items[index].word;
+
+  // Add command for the current word
+  commands[currentWord] = () => {
+    checkSpokenWord(currentWord);
+  };
+
+  // Also try common mispronunciations or partial matches
+  const alternatives = generateAlternatives(currentWord);
+  alternatives.forEach(alt => {
+    commands[alt] = () => {
+      checkSpokenWord(alt);
+    };
+  });
+
+  // Set commands and start listening
+  annyang.addCommands(commands);
+  annyang.setLanguage(currentLang === 'fr' ? 'fr-FR' : 'de-DE');
+
   try {
-    // Request microphone permission and record audio
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-
-    const audioChunks = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-      formData.append('expectedWord', items[index].word);
-      formData.append('lang', currentLang);
-
-      try {
-        const response = await fetch('/speech', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!response.ok) {
-          throw new Error('Server error');
-        }
-
-        const result = await response.json();
-        checkSpokenWord(result.transcript);
-      } catch (error) {
-        console.error('Server-side speech recognition failed:', error);
-        countdownEl.textContent = MESSAGES[currentLang].tryAgain;
-        setTimeout(() => next(), 2000);
-      }
-
-      // Stop all tracks
-      stream.getTracks().forEach(track => track.stop());
-    };
-
-    // Record for 3 seconds
-    mediaRecorder.start();
-    setTimeout(() => {
-      mediaRecorder.stop();
-    }, 3000);
-
-  } catch (error) {
-    console.error('Could not access microphone:', error);
-    countdownEl.textContent = MESSAGES[currentLang].micDenied;
-    setTimeout(() => next(), 3000);
+    annyang.start({ autoRestart: false, continuous: false });
+  } catch (e) {
+    console.warn('Could not start annyang:', e);
+    countdownEl.textContent = MESSAGES[currentLang].tryAgain;
+    setTimeout(() => next(), 2000);
   }
+}
+
+function generateAlternatives(word) {
+  // Generate some common alternatives for fuzzy matching
+  const alternatives = [];
+
+  // Remove umlauts for German words
+  if (currentLang === 'de') {
+    alternatives.push(word.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss'));
+    alternatives.push(word.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u'));
+  }
+
+  // Add lowercase version
+  alternatives.push(word.toLowerCase());
+
+  return alternatives;
 }
 
 function checkSpokenWord(transcript) {
