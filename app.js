@@ -119,6 +119,7 @@ let recognition = null;
 let currentWord = '';
 
 // Initialize speech recognition if available
+let recognition = null;
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
@@ -169,7 +170,8 @@ const MESSAGES = {
     listening: 'Sage das Wort...',
     correct: (pts) => `✓ Richtig! +${pts} Punkte`,
     incorrect: (attempts) => `✗ Falsch. ${attempts > 0 ? `${attempts} Versuch${attempts > 1 ? 'e' : ''} übrig` : 'Keine Versuche mehr'}`,
-    tryAgain: 'Kein Audio erkannt, versuche nochmal'
+    tryAgain: 'Kein Audio erkannt, versuche nochmal',
+    httpsRequired: '🔒 HTTPS erforderlich für Spracherkennung'
   },
   fr: {
     wait: (s) => `Attendez ${s}s`,
@@ -183,7 +185,8 @@ const MESSAGES = {
     listening: 'Dites le mot...',
     correct: (pts) => `✓ Correct! +${pts} points`,
     incorrect: (attempts) => `✗ Faux. ${attempts > 0 ? `${attempts} essai${attempts > 1 ? 's' : ''} restant${attempts > 1 ? 's' : ''}` : 'Aucune tentative'}`,
-    tryAgain: 'Pas d\'audio détecté, réessayez'
+    tryAgain: 'Pas d\'audio détecté, réessayez',
+    httpsRequired: '🔒 HTTPS requis pour la reconnaissance vocale'
   }
 };
 
@@ -360,11 +363,22 @@ function isWordMatch(spoken, target) {
   return distance <= tolerance;
 }
 
+function isSecureContext() {
+  return location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+}
+
 function startListening() {
   if (!recognition) {
     console.warn('Speech Recognition not available');
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
     setTimeout(() => next(), 2000);
+    return;
+  }
+
+  if (!isSecureContext()) {
+    console.warn('Speech Recognition requires HTTPS');
+    countdownEl.textContent = MESSAGES[currentLang].httpsRequired;
+    setTimeout(() => next(), 3000);
     return;
   }
   
