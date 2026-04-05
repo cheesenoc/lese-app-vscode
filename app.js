@@ -398,6 +398,7 @@ function checkSpokenWord(transcript) {
     
     countdownEl.textContent = MESSAGES[currentLang].correct(points);
     revealImageAndReadWord();
+    setTimeout(() => next(), 2500);
   } else {
     attemptCount++;
     if (attemptCount < MAX_ATTEMPTS) {
@@ -406,6 +407,7 @@ function checkSpokenWord(transcript) {
     } else {
       countdownEl.textContent = MESSAGES[currentLang].incorrect(0);
       revealImageAndReadWord();
+      setTimeout(() => next(), 2500);
     }
   }
 }
