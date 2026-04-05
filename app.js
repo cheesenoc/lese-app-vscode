@@ -171,7 +171,8 @@ const MESSAGES = {
     correct: (pts) => `✓ Richtig! +${pts} Punkte`,
     incorrect: (attempts) => `✗ Falsch. ${attempts > 0 ? `${attempts} Versuch${attempts > 1 ? 'e' : ''} übrig` : 'Keine Versuche mehr'}`,
     tryAgain: 'Kein Audio erkannt, versuche nochmal',
-    httpsRequired: '🔒 HTTPS erforderlich für Spracherkennung'
+    httpsRequired: '🔒 HTTPS erforderlich für Spracherkennung',
+    micDenied: '🎤 Mikrofon-Zugriff verweigert'
   },
   fr: {
     wait: (s) => `Attendez ${s}s`,
@@ -186,7 +187,8 @@ const MESSAGES = {
     correct: (pts) => `✓ Correct! +${pts} points`,
     incorrect: (attempts) => `✗ Faux. ${attempts > 0 ? `${attempts} essai${attempts > 1 ? 's' : ''} restant${attempts > 1 ? 's' : ''}` : 'Aucune tentative'}`,
     tryAgain: 'Pas d\'audio détecté, réessayez',
-    httpsRequired: '🔒 HTTPS requis pour la reconnaissance vocale'
+    httpsRequired: '🔒 HTTPS requis pour la reconnaissance vocale',
+    micDenied: '🎤 Accès au microphone refusé'
   }
 };
 
@@ -376,21 +378,76 @@ function startListening() {
   }
 
   if (!isSecureContext()) {
-    console.warn('Speech Recognition requires HTTPS');
-    countdownEl.textContent = MESSAGES[currentLang].httpsRequired;
-    setTimeout(() => next(), 3000);
+    // Fallback to server-side speech recognition
+    startServerSideListening();
     return;
   }
-  
+
   const langCode = currentLang === 'fr' ? 'fr-FR' : 'de-DE';
   recognition.lang = langCode;
-  
+
   try {
     recognition.start();
   } catch (e) {
     console.warn('Could not start recognition:', e);
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
-    setTimeout(() => next(), 1500);
+    setTimeout(startListening, 1500);
+  }
+}
+
+async function startServerSideListening() {
+  countdownEl.textContent = MESSAGES[currentLang].listening || 'Sage das Wort...';
+
+  try {
+    // Request microphone permission and record audio
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+    const audioChunks = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('expectedWord', items[index].word);
+      formData.append('lang', currentLang);
+
+      try {
+        const response = await fetch('/speech', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Server error');
+        }
+
+        const result = await response.json();
+        checkSpokenWord(result.transcript);
+      } catch (error) {
+        console.error('Server-side speech recognition failed:', error);
+        countdownEl.textContent = MESSAGES[currentLang].tryAgain;
+        setTimeout(() => next(), 2000);
+      }
+
+      // Stop all tracks
+      stream.getTracks().forEach(track => track.stop());
+    };
+
+    // Record for 3 seconds
+    mediaRecorder.start();
+    setTimeout(() => {
+      mediaRecorder.stop();
+    }, 3000);
+
+  } catch (error) {
+    console.error('Could not access microphone:', error);
+    countdownEl.textContent = MESSAGES[currentLang].micDenied;
+    setTimeout(() => next(), 3000);
   }
 }
 
