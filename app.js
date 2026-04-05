@@ -15,7 +15,6 @@ const itemsMap = [
   {de: 'WASSER', fr: 'EAU', emoji: '💧'},
   {de: 'MILCH', fr: 'LAIT', emoji: '🥛'},
   {de: 'STUHL', fr: 'CHAIR', emoji: '🪑'},
-  {de: 'TISCH', fr: 'TABLE', emoji: '🛋️'},
   {de: 'TÜR', fr: 'PORTE', emoji: '🚪'},
   {de: 'FENSTER', fr: 'FENETRE', emoji: '🔲'},
   {de: 'BUCH', fr: 'LIVRE', emoji: '📚'},
