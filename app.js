@@ -386,8 +386,9 @@ function checkSpokenWord(transcript) {
   const isCorrect = isWordMatch(transcript, item.word);
   
   if (isCorrect) {
-    // Award points based on attempt
-    const points = Math.max(0, 4 - attemptCount);
+    // Award points based on attempt: 1st=3, 2nd=2, 3rd=1 (Map: [ -, 3, 2, 1 ] by attempt)
+    const pointsMap = [0, 3, 2, 1];
+    const points = pointsMap[attemptCount + 1] || 0;
     try {
       const counts = loadCounts(currentLang);
       counts[item.word] = (counts[item.word] || 0) + points;
