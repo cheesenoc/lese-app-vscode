@@ -397,7 +397,7 @@ function checkSpokenWord(transcript) {
     } catch (e) { console.warn('Could not update counts', e); }
     
     countdownEl.textContent = MESSAGES[currentLang].correct(points);
-    speak(item.word);
+    revealImageAndReadWord();
     setTimeout(() => next(), 2500);
   } else {
     attemptCount++;
@@ -406,7 +406,7 @@ function checkSpokenWord(transcript) {
       setTimeout(startListening, 1500);
     } else {
       countdownEl.textContent = MESSAGES[currentLang].incorrect(0);
-      speak(item.word);
+      revealImageAndReadWord();
       setTimeout(() => next(), 2500);
     }
   }
@@ -444,6 +444,24 @@ function speak(text) {
 
 function showImage() {
   if (!canReveal) return; // ignore clicks during pre-timer
+  
+  // Just reset and start listening - don't show image yet
+  revealed = true;
+  if (preTimer) { clearTimeout(preTimer); preTimer = null; }
+  if (preInterval) { clearInterval(preInterval); preInterval = null; }
+  canReveal = false;
+  
+  // Reset attempt counter and start listening for speech
+  attemptCount = 0;
+  const item = items[index];
+  currentWord = item.word;
+  
+  // Start listening for the child to say the word
+  startListening();
+}
+
+function revealImageAndReadWord() {
+  // Called after speech recognition is done (correct or max attempts reached)
   const item = items[index];
   imageWrap.innerHTML = '';
   let src;
@@ -458,18 +476,8 @@ function showImage() {
   imageWrap.appendChild(img);
   imageWrap.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(() => imageWrap.classList.add('show'));
-  revealed = true;
-  // start post-reveal auto-next timer (for cleanup)
-  if (preTimer) { clearTimeout(preTimer); preTimer = null; }
-  if (preInterval) { clearInterval(preInterval); preInterval = null; }
-  canReveal = false;
   
-  // Reset attempt counter and start listening for speech
-  attemptCount = 0;
-  currentWord = item.word;
-  
-  // Start listening for the child to say the word
-  startListening();
+  speak(item.word);
 }
 
 function next() {
