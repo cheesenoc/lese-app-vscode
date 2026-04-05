@@ -316,8 +316,7 @@ function render() {
   imageWrap.setAttribute('aria-hidden', 'true');
   imageWrap.classList.remove('show');
   revealed = false;
-  // start initial lock (use PRE_SECONDS, supports fast mode)
-  startPreReveal(PRE_SECONDS);
+  canReveal = true;
 }
 
 function createSVGForEmoji(emoji, label) {
