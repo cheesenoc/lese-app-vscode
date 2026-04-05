@@ -111,6 +111,43 @@ let postTimer = null;
 let preInterval = null;
 let postInterval = null;
 
+// Speech recognition state
+let isListening = false;
+let attemptCount = 0;
+const MAX_ATTEMPTS = 3;
+let recognition = null;
+let currentWord = '';
+
+// Initialize speech recognition if available
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  
+  recognition.onstart = () => {
+    isListening = true;
+    countdownEl.textContent = MESSAGES[currentLang].listening || 'Höre zu...';
+  };
+  
+  recognition.onresult = (event) => {
+    isListening = false;
+    const transcript = event.results[0][0].transcript.trim().toUpperCase();
+    checkSpokenWord(transcript);
+  };
+  
+  recognition.onerror = (event) => {
+    isListening = false;
+    console.warn('Speech recognition error:', event.error);
+    countdownEl.textContent = MESSAGES[currentLang].tryAgain || 'Versuche nochmal';
+    setTimeout(startListening, 1500);
+  };
+  
+  recognition.onend = () => {
+    isListening = false;
+  };
+}
+
 // Language and scoring
 const langBtn = document.getElementById('langBtn');
 const scoreBtn = document.getElementById('score');
@@ -128,7 +165,11 @@ const MESSAGES = {
     autoNext: (s) => `Klicken oder Leertaste drücken -  Automatisch weiter in ${s}s`,
     noEntries: 'Keine Einträge für Deutsch',
     langLabel: 'Auf Französisch wechseln',
-    scoreTooltip: 'Punkte'
+    scoreTooltip: 'Punkte',
+    listening: 'Sage das Wort...',
+    correct: (pts) => `✓ Richtig! +${pts} Punkte`,
+    incorrect: (attempts) => `✗ Falsch. ${attempts > 0 ? `${attempts} Versuch${attempts > 1 ? 'e' : ''} übrig` : 'Keine Versuche mehr'}`,
+    tryAgain: 'Kein Audio erkannt, versuche nochmal'
   },
   fr: {
     wait: (s) => `Attendez ${s}s`,
@@ -138,7 +179,11 @@ const MESSAGES = {
     autoNext: (s) => `Cliquez ou appuyez sur espace - Passe automatiquement dans ${s}s`,
     noEntries: 'Aucune entrée pour Français',
     langLabel: 'Passer en allemand',
-    scoreTooltip: 'Points'
+    scoreTooltip: 'Points',
+    listening: 'Dites le mot...',
+    correct: (pts) => `✓ Correct! +${pts} points`,
+    incorrect: (attempts) => `✗ Faux. ${attempts > 0 ? `${attempts} essai${attempts > 1 ? 's' : ''} restant${attempts > 1 ? 's' : ''}` : 'Aucune tentative'}`,
+    tryAgain: 'Pas d\'audio détecté, réessayez'
   }
 };
 
@@ -259,6 +304,12 @@ function startPostAutoNext(seconds = 5) {
 }
 
 function render() {
+  // Stop any ongoing speech recognition
+  if (recognition && isListening) {
+    recognition.stop();
+  }
+  attemptCount = 0;
+  
   const item = items[index];
   wordEl.textContent = item.word;
   imageWrap.innerHTML = '';
@@ -276,6 +327,88 @@ function createSVGForEmoji(emoji, label) {
     `<text x="50%" y="52%" font-size="72" text-anchor="middle" dominant-baseline="middle">${emoji}</text>` +
     `</svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+// Fuzzy matching: Levenshtein distance to check pronunciation tolerance
+function levenshteinDistance(a, b) {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+// Check if spoken word matches the target (with tolerance)
+function isWordMatch(spoken, target) {
+  // Exact match or very close match
+  if (spoken === target) return true;
+  
+  const distance = levenshteinDistance(spoken, target);
+  // Allow up to 2 character differences for children's pronunciation
+  const tolerance = Math.max(1, Math.floor(target.length * 0.3)); // 30% tolerance
+  return distance <= tolerance;
+}
+
+function startListening() {
+  if (!recognition) {
+    console.warn('Speech Recognition not available');
+    countdownEl.textContent = MESSAGES[currentLang].tryAgain;
+    setTimeout(() => next(), 2000);
+    return;
+  }
+  
+  const langCode = currentLang === 'fr' ? 'fr-FR' : 'de-DE';
+  recognition.lang = langCode;
+  
+  try {
+    recognition.start();
+  } catch (e) {
+    console.warn('Could not start recognition:', e);
+    countdownEl.textContent = MESSAGES[currentLang].tryAgain;
+    setTimeout(() => next(), 1500);
+  }
+}
+
+function checkSpokenWord(transcript) {
+  const item = items[index];
+  const isCorrect = isWordMatch(transcript, item.word);
+  
+  if (isCorrect) {
+    // Award points based on attempt
+    const points = Math.max(0, 4 - attemptCount);
+    try {
+      const counts = loadCounts(currentLang);
+      counts[item.word] = (counts[item.word] || 0) + points;
+      saveCounts(currentLang, counts);
+      updateScoreDisplay();
+    } catch (e) { console.warn('Could not update counts', e); }
+    
+    countdownEl.textContent = MESSAGES[currentLang].correct(points);
+    speak(item.word);
+    setTimeout(() => next(), 2500);
+  } else {
+    attemptCount++;
+    if (attemptCount < MAX_ATTEMPTS) {
+      countdownEl.textContent = MESSAGES[currentLang].incorrect(MAX_ATTEMPTS - attemptCount);
+      setTimeout(startListening, 1500);
+    } else {
+      countdownEl.textContent = MESSAGES[currentLang].incorrect(0);
+      speak(item.word);
+      setTimeout(() => next(), 2500);
+    }
+  }
 }
 
 function speak(text) {
@@ -325,24 +458,24 @@ function showImage() {
   imageWrap.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(() => imageWrap.classList.add('show'));
   revealed = true;
-  // start post-reveal auto-next timer
+  // start post-reveal auto-next timer (for cleanup)
   if (preTimer) { clearTimeout(preTimer); preTimer = null; }
   if (preInterval) { clearInterval(preInterval); preInterval = null; }
   canReveal = false;
-
-  // increment per-word counter for current language
-  try {
-    const counts = loadCounts(currentLang);
-    counts[item.word] = (counts[item.word] || 0) + 1;
-    saveCounts(currentLang, counts);
-    updateScoreDisplay();
-  } catch (e) { console.warn('Could not update counts', e); }
-
-  speak(item.word);
-  startPostAutoNext(POST_SECONDS);
+  
+  // Reset attempt counter and start listening for speech
+  attemptCount = 0;
+  currentWord = item.word;
+  
+  // Start listening for the child to say the word
+  startListening();
 }
 
 function next() {
+  // Stop listening if still active
+  if (recognition && isListening) {
+    recognition.stop();
+  }
   index = getNextIndex();
   render();
 }
