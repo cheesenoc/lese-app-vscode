@@ -494,9 +494,23 @@ function speak(text) {
 
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) {
-    const onChange = () => { window.speechSynthesis.removeEventListener('voiceschanged', onChange); speakNow(); };
+    let said = false;
+    const onChange = () => {
+      if (!said) {
+        said = true;
+        window.speechSynthesis.removeEventListener('voiceschanged', onChange);
+        clearTimeout(voiceTimeout);
+        speakNow();
+      }
+    };
     window.speechSynthesis.addEventListener('voiceschanged', onChange);
-    setTimeout(speakNow, 800);
+    const voiceTimeout = setTimeout(() => {
+      if (!said) {
+        said = true;
+        window.speechSynthesis.removeEventListener('voiceschanged', onChange);
+        speakNow();
+      }
+    }, 800);
   } else speakNow();
 }
 
