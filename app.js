@@ -104,6 +104,7 @@ const itemsMap = [
 let index = 0;
 let revealed = false;
 let queue = [];
+let speechPhaseComplete = false;
 
 let canReveal = false;
 let preTimer = null;
@@ -146,45 +147,6 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   recognition.onend = () => {
     isListening = false;
   };
-}
-
-// Initialize annyang if available
-if (typeof annyang !== 'undefined') {
-  annyang.addCallback('start', () => {
-    isListening = true;
-  });
-
-  annyang.addCallback('end', () => {
-    isListening = false;
-  });
-
-  annyang.addCallback('error', (error) => {
-    console.warn('Annyang error:', error);
-    isListening = false;
-    countdownEl.textContent = MESSAGES[currentLang].tryAgain || 'Versuche nochmal';
-    setTimeout(() => next(), 2000);
-  });
-
-  annyang.addCallback('errorNetwork', () => {
-    console.warn('Annyang network error');
-    isListening = false;
-    countdownEl.textContent = '🔗 Netzwerkfehler';
-    setTimeout(() => next(), 2000);
-  });
-
-  annyang.addCallback('errorPermissionBlocked', () => {
-    console.warn('Annyang permission blocked');
-    isListening = false;
-    countdownEl.textContent = '🎤 Mikrofon blockiert';
-    setTimeout(() => next(), 2000);
-  });
-
-  annyang.addCallback('errorPermissionDenied', () => {
-    console.warn('Annyang permission denied');
-    isListening = false;
-    countdownEl.textContent = '🎤 Mikrofon verweigert';
-    setTimeout(() => next(), 2000);
-  });
 }
 
 // Language and scoring
@@ -347,12 +309,8 @@ function render() {
   if (recognition && isListening) {
     recognition.stop();
   }
-  // Stop annyang if running
-  if (typeof annyang !== 'undefined' && isListening) {
-    annyang.abort();
-  }
   attemptCount = 0;
-
+  
   const item = items[index];
   wordEl.textContent = item.word;
   imageWrap.innerHTML = '';
@@ -360,6 +318,7 @@ function render() {
   imageWrap.classList.remove('show');
   revealed = false;
   canReveal = true;
+  speechPhaseComplete = false;
 }
 
 function createSVGForEmoji(emoji, label) {
@@ -403,38 +362,17 @@ function isWordMatch(spoken, target) {
   return distance <= tolerance;
 }
 
-function isSecureContext() {
-  return location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-}
-
 function startListening() {
   if (!recognition) {
-    // Try annyang as fallback for HTTP sites
-    if (typeof annyang !== 'undefined') {
-      startAnnyangListening();
-      return;
-    }
     console.warn('Speech Recognition not available');
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
     setTimeout(() => next(), 2000);
     return;
   }
-
-  if (!isSecureContext()) {
-    // Try annyang as fallback for HTTP sites
-    if (typeof annyang !== 'undefined') {
-      startAnnyangListening();
-      return;
-    }
-    console.warn('Speech Recognition requires HTTPS');
-    countdownEl.textContent = '🔒 HTTPS erforderlich für Spracherkennung';
-    setTimeout(() => next(), 3000);
-    return;
-  }
-
+  
   const langCode = currentLang === 'fr' ? 'fr-FR' : 'de-DE';
   recognition.lang = langCode;
-
+  
   try {
     recognition.start();
   } catch (e) {
@@ -442,55 +380,6 @@ function startListening() {
     countdownEl.textContent = MESSAGES[currentLang].tryAgain;
     setTimeout(() => next(), 1500);
   }
-}
-
-function startAnnyangListening() {
-  countdownEl.textContent = MESSAGES[currentLang].listening || 'Sage das Wort...';
-
-  // Set up annyang commands dynamically
-  const commands = {};
-  const currentWord = items[index].word;
-
-  // Add command for the current word
-  commands[currentWord] = () => {
-    checkSpokenWord(currentWord);
-  };
-
-  // Also try common mispronunciations or partial matches
-  const alternatives = generateAlternatives(currentWord);
-  alternatives.forEach(alt => {
-    commands[alt] = () => {
-      checkSpokenWord(alt);
-    };
-  });
-
-  // Set commands and start listening
-  annyang.addCommands(commands);
-  annyang.setLanguage(currentLang === 'fr' ? 'fr-FR' : 'de-DE');
-
-  try {
-    annyang.start({ autoRestart: false, continuous: false });
-  } catch (e) {
-    console.warn('Could not start annyang:', e);
-    countdownEl.textContent = MESSAGES[currentLang].tryAgain;
-    setTimeout(() => next(), 2000);
-  }
-}
-
-function generateAlternatives(word) {
-  // Generate some common alternatives for fuzzy matching
-  const alternatives = [];
-
-  // Remove umlauts for German words
-  if (currentLang === 'de') {
-    alternatives.push(word.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss'));
-    alternatives.push(word.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u'));
-  }
-
-  // Add lowercase version
-  alternatives.push(word.toLowerCase());
-
-  return alternatives;
 }
 
 function checkSpokenWord(transcript) {
@@ -509,6 +398,7 @@ function checkSpokenWord(transcript) {
     } catch (e) { console.warn('Could not update counts', e); }
     
     countdownEl.textContent = MESSAGES[currentLang].correct(points);
+    speechPhaseComplete = true;
     revealImageAndReadWord();
     setTimeout(() => next(), 2500);
   } else {
@@ -518,6 +408,7 @@ function checkSpokenWord(transcript) {
       setTimeout(startListening, 1500);
     } else {
       countdownEl.textContent = MESSAGES[currentLang].incorrect(0);
+      speechPhaseComplete = true;
       revealImageAndReadWord();
       setTimeout(() => next(), 2500);
     }
@@ -611,7 +502,7 @@ card.addEventListener('click', (e) => {
     countdownEl.textContent = MESSAGES[currentLang].pleaseWait;
       setTimeout(() => { if (!canReveal) countdownEl.textContent = prev; }, 700);
     }
-  } else next();
+  } else if (speechPhaseComplete) next();
 });
 
 // keyboard: Space or Enter
@@ -625,7 +516,7 @@ window.addEventListener('keydown', (e) => {
         countdownEl.textContent = MESSAGES[currentLang].pleaseWait;
         setTimeout(() => { if (!canReveal) countdownEl.textContent = prev; }, 700);
       }
-    } else next();
+    } else if (speechPhaseComplete) next();
   }
 });
 
