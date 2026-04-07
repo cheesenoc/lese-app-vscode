@@ -362,6 +362,59 @@ function isWordMatch(spoken, target) {
   return distance <= tolerance;
 }
 
+// Sound effects using Web Audio API
+function playCorrectSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    
+    // First beep (higher pitch)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.frequency.value = 600;
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    osc1.start(now);
+    osc1.stop(now + 0.15);
+    
+    // Second beep (even higher)
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.frequency.value = 800;
+    gain2.gain.setValueAtTime(0.3, now + 0.2);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+    osc2.start(now + 0.2);
+    osc2.stop(now + 0.35);
+  } catch (e) {
+    console.warn('Could not play correct sound:', e);
+  }
+}
+
+function playWrongSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    
+    // Descending beep (lower pitch)
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.linearRampToValueAtTime(200, now + 0.2);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } catch (e) {
+    console.warn('Could not play wrong sound:', e);
+  }
+}
+
 function startListening() {
   if (!recognition) {
     console.warn('Speech Recognition not available');
@@ -398,10 +451,12 @@ function checkSpokenWord(transcript) {
     } catch (e) { console.warn('Could not update counts', e); }
     
     countdownEl.textContent = MESSAGES[currentLang].correct(points);
+    playCorrectSound();
     speechPhaseComplete = true;
     revealImageAndReadWord();
     setTimeout(() => next(), 2500);
   } else {
+    playWrongSound();
     attemptCount++;
     if (attemptCount < MAX_ATTEMPTS) {
       countdownEl.textContent = MESSAGES[currentLang].incorrect(MAX_ATTEMPTS - attemptCount);
